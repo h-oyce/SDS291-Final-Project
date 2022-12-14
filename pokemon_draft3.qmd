@@ -1,0 +1,209 @@
+---
+title: "pokemon dataset"
+author: "sarah, mars, juniper"
+format: pdf
+---
+
+# Dataset 
+We are planning to use the Complete Pokemon Dataset that has information on different Pokemon up to Gen 7. The link where we got the dataset is included below. 
+[Dataset Link](https://www.kaggle.com/datasets/rounakbanik/pokemon)
+
+# Research Question 
+How do different Pokemon's base stats influence capture rate? 
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+library(mltools)
+library(data.table)
+library(car)
+```
+
+The professor recommended doing this so the empty string "" will be converted to a NA value so we can then use the is.na() function. 
+```{r}
+pokemon <- read.csv("/Users/sarah/Desktop/SDS291/FinalProject/pokemon.csv", na.strings = c(NA, ""))
+```
+
+Making the dual_type column that says if the Pokemon is a dual type based on if there is a second type. 
+```{r}
+pokemon <- mutate(pokemon, dual_type = !is.na(type2))
+```
+
+# Removing legendaries and making pokemone2 dataset
+```{r}
+pokemon2 <- filter(pokemon, is_legendary == 0)
+```
+
+# Making sure that these variables are the right data type (specifically making sure capture rate is numeric)
+```{r}
+pokemon2$'capture_rate' = as.numeric(pokemon2$'capture_rate')
+pokemon2$'type1' = as.factor(pokemon2$'type1')
+pokemon2$'type2' = as.factor(pokemon2$'type2')
+```
+
+# attack, hp, speed, defense visualizations 
+
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = attack, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x)
+```
+
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = defense, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x)
+```
+
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = hp, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x)
+```
+
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = speed, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x)
+```
+
+## Using pokemon2
+```{r}
+mixed_model1 <- lm(capture_rate ~ dual_type + defense * speed , data = pokemon2)
+```
+
+```{r}
+summary(mixed_model1)
+```
+
+```{r}
+mixed_model2 <- lm(capture_rate ~ attack + defense * speed , data = pokemon2)
+```
+
+```{r}
+summary(mixed_model2)
+```
+
+```{r}
+mixed_model3 <- lm(capture_rate ~ hp + defense * speed , data = pokemon2)
+```
+
+```{r}
+summary(mixed_model3)
+```
+
+```{r}
+mixed_model4 <- lm(capture_rate ~ defense * speed , data = pokemon2)
+```
+
+```{r}
+summary(mixed_model4)
+```
+
+First 
+Reduced: defense * speed 
+Full: defense * speed + attack
+```{r}
+anova(mixed_model4, mixed_model2)
+```
+p-value is below 0.05 so attack adds to model
+
+Second
+Reduced: defense * speed 
+Full: defense * speed + dual_type
+```{r}
+anova(mixed_model4, mixed_model1)
+```
+p-value is above 0.05 so dual_type doesn't add to model
+
+Second
+Reduced: defense * speed 
+Full: defense * speed + hp
+```{r}
+anova(mixed_model4, mixed_model3)
+```
+p-value is below 0.05 so hp does add to model. 
+
+## adjusted r-squared and defense:speed p-value
+## base
+```{r}
+summary(mixed_model4)
+```
+Adjusted R-squared:  0.302
+F-statistic: 106.1 on 3 and 726 DF,  p-value: < 2.2e-16
+p-value for defense:speed: 0.0456
+
+## hp
+```{r}
+summary(mixed_model3)
+```
+Adjusted R-squared:  0.4096 
+F-statistic: 127.4 on 4 and 725 DF,  p-value: < 2.2e-16
+p-value for defense:speed: 0.837 
+
+## attack
+```{r}
+summary(mixed_model2)
+```
+Adjusted R-squared:  0.3471 
+F-statistic: 97.89 on 4 and 725 DF,  p-value: < 2.2e-16
+p-value for defense:speed: 0.388440 
+
+
+
+# when p-value for defense:speed is above 0.05 so we're changing it 
+When checking the p-values on the interactive variable, it starts to lose its importance in certain models so we will be changing the interaction term to be parallel/additive. 
+
+## explanatory variables: hp + defense + speed
+```{r}
+add_model3 <- lm(capture_rate ~ hp + defense + speed, data = pokemon2)
+```
+
+```{r}
+summary(add_model3)
+```
+Adjusted R-squared:  0.4103
+
+## explanatory variables: attack + defense + speed
+```{r}
+add_model2 <- lm(capture_rate ~ attack + defense + speed, data = pokemon2)
+```
+
+```{r}
+summary(add_model2)
+```
+Adjusted R-squared:  0.3473 
+
+# Nested F-test for hp + defense + speed vs hp + defense * speed
+```{r}
+anova(add_model3, mixed_model3)
+```
+p-value: 0.8371 
+Is above 0.05 so the interaction between speed and defense is not needed 
+
+# testing out interaction between hp and defense for fun
+
+## explanatory variables:  hp + defense + speed
+```{r}
+hp_model3 <- lm(capture_rate ~ hp * defense + speed, data=pokemon2)
+```
+
+```{r}
+summary(hp_model3)
+```
+hp:defense has a p-value of  0.686 so its above 0.05 and not needed. 
+
+# Best model
+The best model is add_model3. We use capture_rate as the outcome variable, and hp, defense, and speed as explanatory variables in an additive model. 
+
+```{r}
+add_model3 <- lm(capture_rate ~ hp + defense + speed, data = pokemon2)
+```
+
+```{r}
+summary(add_model3)
+```
+Adjusted R-squared:  0.4103
+
+
