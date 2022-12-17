@@ -1,0 +1,74 @@
+---
+title: "Pokemon Analysis"
+format: pdf
+---
+```{r}
+library(ggplot2)
+library(dplyr)
+
+library(mltools)
+library(data.table)
+library(car)
+```
+
+The professor recommended doing this so the empty string "" will be converted to a NA value so we can then use the is.na() function. 
+```{r}
+pokemon <- read.csv("/Users/sarah/Desktop/SDS291/FinalProject/pokemon.csv", na.strings = c(NA, ""))
+```
+
+Making the dual_type column that says if the Pokemon is a dual type based on if there is a second type. 
+```{r}
+pokemon <- mutate(pokemon, dual_type = !is.na(type2))
+```
+
+```{r}
+pokemon$'capture_rate' = as.numeric(pokemon$'capture_rate')
+pokemon$'type1' = as.factor(pokemon$'type1')
+pokemon$'type2' = as.factor(pokemon$'type2')
+```
+
+# Removing legendaries and making pokemone2 dataset
+```{r}
+pokemon2 <- filter(pokemon, is_legendary == 0)
+```
+
+# Making sure that these variables are the right data type (specifically making sure capture rate is numeric)
+```{r}
+pokemon2$'capture_rate' = as.numeric(pokemon2$'capture_rate')
+pokemon2$'type1' = as.factor(pokemon2$'type1')
+pokemon2$'type2' = as.factor(pokemon2$'type2')
+```
+
+
+# parts i will be focusing on 
+## visualizations 
+### hp and capture_rate 
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = hp, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x) + 
+    xlab("Hit Points") +  
+    ylab("Capture Rate") + 
+    ggtitle("Hit Points vs Capture Rate")
+```
+
+### defense and capture_rate
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = defense, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x) + 
+    xlab("Defense") + 
+    ylab("Capture Rate") + 
+    ggtitle("Defense vs Capture Rate")
+```
+
+### speed and capture_rate 
+```{r}
+  ggplot(data = pokemon2, mapping = aes(x = speed, y = capture_rate)) +
+    geom_point() +
+    geom_smooth(method = lm, se = FALSE, formula = y~x) + 
+    xlab("Speed") + 
+    ylab("Capture Rate") + 
+    ggtitle("Speed vs Capture Rate")
+```
+
